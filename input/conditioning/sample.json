@@ -1,0 +1,33 @@
+{
+  "all_triplets": [
+    [
+      {
+        "item1": "young male person",
+        "relation": "standing on",
+        "item2": "sandy land"
+      },
+      {
+        "item1": "vast blue sea",
+        "relation": "border",
+        "item2": "sandy land"
+      }
+    ]
+  ],
+  "all_isolated_items": [
+    [
+      "starry dark sky"
+    ]
+  ],
+  "all_global_ids": [
+    [
+      {
+        "item1": 3201272,
+        "item2": 3201274
+      },
+      {
+        "item1": 3201273,
+        "item2": 3201274
+      }
+    ]
+  ]
+}

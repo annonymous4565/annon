@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+
+ <meta charset="UTF-8">
+ <title>DiscGraph: Dependency-Aware Discrete Diffusion for Scene Graph Generation</title>
+
+ <script>
+window.MathJax = {
+ tex: {
+ inlineMath: [['$', '$'], ['\\(', '\\)']],
+ displayMath: [['$$', '$$'], ['\\[', '\\]']]
+ },
+ svg: {
+ fontCache: 'global'
+ }
+};
+</script>
+ <script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+ <style>
+ /* Center the Code section only */.code-section {
+ text-align: center;
+}
+
+/* Keep heading nicely centered */.code-section h2 {
+ text-align: center;
+}
+
+/* Button already inline-block, this ensures perfect centering */.code-section.code-link {
+ margin-top: 20px;
+}
+ body {
+ font-family: Arial, sans-serif;
+ line-height: 1.6;
+ margin: 0;
+ padding: 0;
+ text-align: left;
+ color: #222;
+ }
+ h2, h3, h4 {
+ text-align: left;
+ font-weight: 600;
+ }
+ h1 {
+ text-align: center;
+ font-weight: 600;
+ }
+ /* Top Banner */.banner {
+ background-color: #007acc;
+ color: white;
+ padding: 40px 20px 20px 20px;
+ }.banner h1 {
+ margin: 0;
+ font-size: 2.2em;
+ text-align: center;
+ }.subtitle {
+ font-style: italic;
+ color: #e0e0e0;
+ margin-top: 0.5em;
+ text-align: center;
+ }
+
+ /* Navbar */.navbar {
+ background: #f4f4f4;
+ border-bottom: 1px solid #ddd;
+ padding: 10px 0;
+ display: flex;
+ justify-content: center;
+ gap: 30px;
+ font-size: 1em;
+ position: sticky;
+ top: 0;
+ z-index: 1000;
+ }.navbar a {
+ text-decoration: none;
+ color: #333;
+ font-weight: bold;
+ }.navbar a:hover {
+ color: #007acc;
+ }
+
+ /* Section spacing */
+ section {
+ max-width: 1200px;
+ margin: 40px auto;
+ padding: 0 20px;
+ }
+ h2 {
+ color: #333;
+ margin-bottom: 20px;
+ }
+
+ /* Abstract box */.abstract {
+ background: #f9f9f9;
+ padding: 1em;
+ border-left: 4px solid #444;
+ white-space: pre-line;
+ text-align: left;
+ display: inline-block;
+ max-width: 1200px;
+ }
+
+ /* Figures */
+ figure {
+ margin: 2em auto;
+ text-align: center;
+ }
+ figure img {
+ max-width: 100%;
+ height: auto;
+ /* border: 1px solid #ddd; */
+ }
+ figcaption {
+ font-size: 0.9em;
+ color: #555;
+ margin-top: 0.5em;
+ }
+
+ /* Algorithm Section - 3 side by side */.three-figures {
+ display: flex;
+ justify-content: center;
+ gap: 20px;
+ flex-wrap: wrap;
+ margin-top: 30px;
+ }.three-figures figure {
+ flex: 1;
+ max-width: 580px;
+ }
+
+ /* Code section */.code-link a {
+ display: inline-block;
+ margin-top: 10px;
+ padding: 10px 20px;
+ background: #007acc;
+ color: white;
+ text-decoration: none;
+ border-radius: 6px;
+ }.code-link a:hover {
+ background: #005fa3;
+ }
+ </style>
+</head>
+<body>
+
+ <!-- Top Banner -->
+ <div class="banner">
+ <h1><b>DiscGraph</b>: Dependency-Aware Discrete Diffusion for Scene Graph Generation</h1>
+ <div class="subtitle">Under review</div>
+ </div>
+
+ <!-- Navbar -->
+ <div class="navbar">
+ <a href="#abstract">Abstract</a>
+ <a href="#hypothesis">DiscGraph Framework</a>
+ <a href="#results">Results</a>
+ <a href="index.html#code">Code</a>
+ <!--a href="#rebuttal">Rebuttal</a-->
+ <!--a href="rebuttal.html">Rebuttal</a-->
+ </div>
+
+ <!-- Abstract -->
+ <section id="abstract">
+ <h2>Abstract</h2>
+ <div class="abstract">
+<p>Scene graphs (SGs) represent objects and their relationships as structured graphs, enabling applications in image generation, robotics, and 3D understanding. Recent work suggests that conditioning image generation on scene graphs improves compositional fidelity compared to text-only prompting. However, since users typically provide text rather than structured graphs, a key challenge is to generate scene graphs from natural language. Prior work on discrete diffusion has demonstrated success in generating generic graphs such as molecules and circuits, but fails to account for the hierarchical structure and strong dependencies between objects, edges, and relations in scene graphs. We address this limitation by introducing a dependency-aware, hierarchically constrained discrete diffusion model for scene graph generation. Our approach decouples structure and semantics across the forward process, enabling the reverse processes to capture conditional dependencies. At inference time, we perform training-free conditioning to sample text-aligned scene graphs. We evaluate our method on standard SG benchmarks and demonstrate improvements over both continuous and discrete graph generation baselines across graph and layout metrics. When fed to downstream image generation, our approach yields improved compositional alignment compared to text-to-image models, particularly in multi-object scenarios.
+ 
+ </p>
+ </div>
+ 
+ <figure>
+ <img src="assets/outline_v4.png" alt="Figure 1" style="max-width: 60%; height: auto;">
+ <figcaption>Figure 1: <b>DiscGraph</b> pipeline: (1) Forward noising process in which relations are edge-gated. (2) Factorized reverse sampling that generates dependency-aware edges and relations. (3) Reward-tilting at inference using the CLIP similarity with the text prompt as reward; a layout head also generates bounding boxes for graph nodes. (4) SG and text conditioned off-the-shelf image generator.
+ </figcaption>
+ </figure>
+
+ </section>
+
+ <!-- Hypothesis -->
+ <section id="hypothesis">
+ <h2><b>DiscGraph</b> Discrete Diffusion Framework</h2>
+ <section>
+ <p>
+ <b>DiscGraph</b>'s redesign of discrete diffusion entails $4$ parts, starting with a (1) hierarchical representation of SGs, (2) 
+ an edge-gated forward noising process (3) a factorized reverse sampler for unconditional generation, and 
+ (4) a text-conditioned SG generation at inference time (see Fig. 1).
+ </p>
+ <h3>1. Hierarchical Scene Graph Representation</h3>
+ <p>
+ Our goal is to arrive at \( x^* \) by performing a human-in-the-loop
+ optimization on \( x_t \) as follows:
+ In discrete diffusion, a graph is represented as a flat categorical state $G=(V,E)$, where node labels $V$ and edge labels $E$ are independently modeled. 
+While this representation is effective for, say, molecule or transportation graphs (where edge relations are defined over a small, well-defined vocabulary with strict constraints), SGs involve large, long-tailed relational vocabularies and strong object–relation dependencies.
+Modeling the edges with a single categorical variable, say $e_{ij} \in \{noEdge, r_1, r_2, \dots, r_K \}$, biases the learning towards edges rather than relations, especially for sparse scene graphs, large $K$, and the long-tailed distribution over relations $r_i$. 
+Scene graphs are better modeled by separating edges (structure) from the relations (semantics), so that <em>relations can be conditioned only on active edges</em>, i.e., $e_{ij}=0 \Rightarrow r_{ij}=0$.
+This motivates our decoupled representation in which each edge is factorized into two: (i) edge existence, $e_{ij} \in \{0,1\}$, and (ii) relation identity, $r^+_{ij} \in \{1,\dots,K_{rel}\}$.
+We define valid scene graph space as:
+\begin{equation}
+\mathcal{G}_{SG} = \{(V,E,R^+): e_{ij}=0 \Rightarrow r_{ij}=0\}, \quad ~~
+\big(V,E,R^+ \big) = \big( (v_{i}), (e_{ij}), (r^+_{ij}) \big)_{i,j=1}^N
+\end{equation}
+\begin{align}
+v_i \in &\mathcal{V} = \{1,\dots,K_{\text{obj}}\}, \quad 
+e_{ij} \in \{0,1\}, \quad 
+r^+_{ij} \in \{1,\dots,K_{\text{rel}}\}.
+\end{align}
+
+Thus the abstract graph state space $\mathcal{G}:= \mathcal{V}^N \times \{0,\dots,K_{rel}\}^{N\times N}$ is modified to the constrained scene graph space, $\mathcal{SG}:= \mathcal{V}^N \times \{0,1\}^{N\times N} \times \{1,\dots,K_{rel}\}^{N\times N}$.
+The factorized state explicitly encodes:
+(i) directedness,
+(ii) sparsity via $E$,
+(iii) semantic validity via $R^+$.
+This representation underlies all subsequent modeling components.
+</p>
+<h3>2. Structure-Aware Forward Process</h3>
+<p>
+We now define a discrete diffusion process over the factorized state as,
+\begin{equation}
+q(x_{1:T} \mid x_0) = \prod_{t=1}^T q(x_t \mid x_{t-1}), \quad x_t = (V_t, E_t, R_t^+).
+\end{equation}
+The forward corruption is redesigned for the factorized transition over the scene graph space $\mathcal{SG}$ as defined below, where $V$ and $E$ corruptions follow standard discrete diffusion forward process:
+\begin{equation}
+q(x_t \mid x_{t-1}) =
+q_V(V_t \mid V_{t-1})\,
+q_E(E_t \mid E_{t-1})\,
+q_R(R_t^+ \mid R_{t-1}^+, E_t, E_{t-1}).
+\end{equation} 
+\textbf{Relation corruption (edge-aware).}
+Relations are only defined on active edges, so corruption must depend on edge state, as follows,
+\begin{equation}
+q_R(R_t \mid R_{t-1}, E_t)
+=
+\prod_{i \neq j}
+q_R(r_{ij,t} \mid r_{ij,t-1}, e_{ij,t}).
+\end{equation}
+
+\begin{equation}
+q_R(r_{ij,t} \mid r_{ij,t-1}, e_{ij,t}) =
+\begin{cases}
+\delta_0(r_{ij,t}), & e_{ij,t} = 0, \\
+\bar{q}_R(r_{ij,t} \mid r_{ij,t-1}), & e_{ij,t} = 1,
+\end{cases}
+\end{equation}
+
+For active edges ($e_{ij}=1$) with relation prior $\pi_R$,
+\begin{equation}
+\tilde{q}_R(r_{ij,t} \mid r_{ij,t-1})
+=
+(1-\beta_t^R)\delta_{r_{ij,t-1}}
++
+\beta_t^R \pi_R,
+\end{equation}
+\begin{equation}
+q_R(R_t \mid R_{t-1}, E_t)
+=
+\prod_{ij:e_{ij,t}=1} \tilde{q}_R(r_{ij,t} \mid r_{ij,t-1})
+\prod_{ij:e_{ij,t}=0} \delta_0(r_{ij,t}).
+\end{equation}
+
+Hence, the combined corruption process is:
+\begin{equation}
+\begin{aligned}
+q(x_t \mid x_{t-1})
+&=
+\prod_i q_V(v_{i,t} \mid v_{i,t-1})
+\prod_{i\neq j} q_E(e_{ij,t} \mid e_{ij,t-1})
+\prod_{ij:e_{ij,t}=1} \tilde{q}_R(r_{ij,t} \mid r_{ij,t-1})
+\prod_{ij:e_{ij,t}=0} \delta_0(r_{ij,t})
+\end{aligned}
+\end{equation}
+ We derive the stationary distribution for the factorized discrete state in the Appendix and provide closed-form expressions for the marginals $q(x_t|x_0)$ in the Appendix. 
+In abstract graph works, the categorical edge prior is $\pi_E = \{\pi_E(0),\pi_E(1),\dots,\pi_E(K_{rel})\}$, but due to sparsity, large $K_{rel}$, and long-tailed relation distribution in scene graphs, $\pi_E(0) \gg \pi_E(r), r \in \{1,\dots,K_{rel}\}$. 
+Thus, without factorization, under random corruption, many relations are pushed towards "no-edge". This implies that rare relations compete against both frequent relations and the overwhelmingly frequent no-edge class. In contrast, the factorized corruption happens over $\{1,\dots,K_{rel}\}$ instead of $\{0,1,\dots,K_{rel}\}$. Thus, rare relations no longer compete with edge absence during relation denoising, resulting in better relation modeling.
+
+
+In addition to random corruption, we also apply absorbing mask corruption on $V$ and $R^+$, which preserves the SG structure and only hides the semantics information, allowing the model to learn SG semantics. 
+For mask tokens $[\mathrm{MASK}]_V$ and $[\mathrm{MASK}]_R$, we employ a hybrid random + mask corruption strategy. 
+The hybrid corruption kernel for objects is as follows (with more details in the Appendix):
+\begin{equation}
+q_V(v_{i,t} \mid v_{i,t-1})
+=
+(1-\beta_t^V)\delta_{v_{i,t-1}}
++
+\beta_t^V\big[
+\rho_V \delta_{[\mathrm{MASK}]_V}
++
+(1-\rho_V)\pi_V
+\big].
+\end{equation}
+</p>
+<h3>3. Factorized Reverse Sampler</h3>
+<p>
+Given the constrained scene graph state at time $t$, $\{x_t = (V_t,E_t,R_t^+),~ e_{ij,t}=0 \Rightarrow r_{ij,t}=0\}$, 
+we need to sample $x_{t-1} \sim p_\theta(x_{t-1}\mid x_t)$ 
+while preserving this constraint. As in discrete diffusion, we parameterize the reverse process through a denoiser $\epsilon_{\theta}$ prediction of the clean state \(x_0\), and combine this prediction with the known forward kernels to obtain a posterior over \(x_{t-1}\).
+For scene graphs, the clean state is $x_0=(V_0,E_0,R_0).$
+Following the structured state space, we factorize the clean-state prediction as
+\begin{equation} \begin{aligned}
+p_\theta(x_0\mid x_t)
+=
+p_\theta(V_0,E_0,R_0\mid x_t) 
+=
+p_\theta(V_0\mid x_t)\,
+p_\theta(E_0\mid V_0,x_t)\,
+p_\theta(R_0\mid V_0,E_0,x_t).
+\end{aligned} 
+\label{eqn:rev_sampler}
+\end{equation} 
+This factorization follows the semantic structure of scene graphs, where:
+(1) first, object identities define the semantic entities in the graph, then
+(2) directed edge existence determines which object pairs interact, and then 
+(3) relation identities depend on objects and are meaningful only for active directed edges.
+
+The combined object, edge, and relation posterior updates define the structured reverse transition:
+\begin{equation} \begin{aligned}
+p_\theta(x_{t-1}\mid x_t)
+&=
+p_\theta(V_{t-1}\mid x_t)\,
+p_\theta(E_{t-1}\mid V_{t-1},x_t)\,
+p_\theta(R_{t-1}\mid V_{t-1},E_{t-1},x_t).\\
+&=
+\prod_i p_\theta(v_{i,t-1}\mid v_{i,t},x_t)
+\prod_{i\neq j}p_\theta(e_{ij,t-1}\mid e_{ij,t},V_{t-1},x_t)
+\prod_{i\neq j}p_\theta(r_{ij,t-1}\mid r_{ij,t},e_{ij,t-1},V_{t-1},E_{t-1},x_t).
+\end{aligned} \end{equation} 
+<b>DiscGraph</b> redesigns the relation posterior to be compatible with the factorized state space $\mathcal{SG}$. This opens up three scenarios: (1) $e_{t-1}$ does not exist, (2) both $e_{t-1}$ and $e_t$ exist, (3) $e_{t-1}$ has come to exist,
+\begin{equation} \begin{aligned}
+p_\theta(r_{ij,t-1}\mid r_{ij,t},e_{ij,t-1},e_{ij,t},x_t)
+=
+\begin{cases}
+\delta_0(r_{ij,t-1}),
+& e_{ij,t-1}=0, \\[6pt]
+p_\theta^{\mathrm{post}}(r_{ij,t-1}\mid r_{ij,t},x_t),
+& e_{ij,t-1}=1,\ e_{ij,t}=1, \\[6pt]
+p_\theta^{\mathrm{marg}}(r_{ij,t-1}\mid x_t),
+& e_{ij,t-1}=1,\ e_{ij,t}=0.
+\end{cases}
+\end{aligned} \end{equation}
+where $p_\theta^{\mathrm{post}}(r_{ij,t-1}\mid r_{ij,t},x_t)$ denotes the standard relation posterior distribution and $p_\theta^{\mathrm{marg}}(r_{ij,t-1}\mid x_t)$ denotes the marginal distribution obtained by moving the denoiser's clean prediction to time $t-1$. Please refer to Appendix for the detailed derivation of the posterior.
+Thus, the factorized reverse sampler is the reverse-time counterpart of the structure-aware forward process. It uses the known discrete posterior for categorical diffusion, but modifies appropriately with <em>edge-gating</em>, needed for our constrained scene graph state. 
+
+In addition to the base sampler, we also explore three types of sampler refinements for robust sampling, such as (1) Split Gibbs refinement, (2) Soft masked refinement, and (3) Rare relation refinement for improving semantic consistency, correcting uncertain predictions, and improving rare relation generation, respectively. 
+Appendix provides details on each strategy and their schedules.
+
+</p>
+
+<h3>4. Text-Conditioned Scene Graph Generation via Reward-Tilted Inference</h3>
+<p>
+The structured diffusion model described above defines an unconditional generative prior over scene graphs, $p_\theta(G_0)$, $G_0$ is the clean sampler output. We aim to generate scene graphs conditioned on a text prompt \(T\), i.e., $P(G_0 \mid T).$
+Instead of training a conditional model \(p_\theta(G_0 \mid T)\), we perform <em>training-free alignment</em> by sampling from a reward-tilted distribution, following works like,
+\begin{equation} \begin{aligned}
+\tilde p(G_0 \mid T)
+\propto
+p_\theta(G_0)\,\exp\big(\beta R(G_0, T)\big),
+\end{aligned} \label{eqn:reward-tilt}\end{equation}
+where \(R(G_0,T)\) is a CLIP similarity score between the scene graph and the text prompt, and \(\beta > 0\) controls the strength of conditioning (Appendix gives more information on the reward).
+The reward depends only on the final state \(G_0\), while sampling proceeds sequentially from \(t=T\) to \(t=0\). So we can define intermediate timestep reward approximations \(R_t:= R(\hat G_0^{(t)}, T)\) using the denoiser's $\epsilon_\theta$ predictions of the clean graph at $t$, $\hat G_0^{(t)} = \epsilon_\theta(G_t, t)$.\\
+\textbf{Tilted Sampling.}
+Ideally, we would sample from the tilted distribution,
+\[
+\tilde p_\theta(G_{t-1} \mid G_t, T)
+\propto
+p_\theta(G_{t-1} \mid G_t)\,
+\exp\big(\beta R(\hat G_0(G_{t-1}), T)\big),
+\]
+but this distribution is intractable, so we use Sequential Monte Carlo sampling (see Appendix).
+Thus, by leveraging the intermediate clean-state predictions \(\hat G_0\mid G_t\), we can guide the reverse diffusion trajectory toward samples that are aligned with the input text, while generating valid scene graphs.
+
+
+</p>
+
+</section>
+
+
+
+ <!-- Results -->
+ <section id="results">
+ <h2>Results</h2>
+ <figure>
+ <img src="assets/graph_metrics_v1.png" alt="Figure 2">
+ <figcaption>Figure 2: Quantitative comparison of different methods on popular alignment metrics. Top performing model is highlighted in <b>Black</b>, 2nd best in <font color="blue"><b>Blue</b></font>. </figcaption>
+ </figure>
+ <figure>
+ <img src="assets/uncond_vg_3a.png" alt="Figure 3">
+ <figcaption>Figure 3: Qualitative Results -- Scene graphs sampled from <b>DiscGraph</b> trained on Visual Genome.</figcaption>
+ </figure>
+ <figure>
+ <img src="assets/comple_vg_v1.png" alt="Figure 4">
+ <figcaption>Figure 4: Qualitative Results -- <b>DiscGraph</b> scene graph single object/relation completion task on Visual Genome dataset. Masked objects are in black, and masked relations are indicated by red arrows.</figcaption>
+ </figure>
+ <figure>
+ <img src="assets/t2i_coco_tab.png" alt="Figure 5">
+ <figcaption>Figure 5: Quantitative Results -- Comparing <b>DiscGraph</b> against text-only composition methods. Top performing model is highlighted in <b>Black</b>, 2nd best in <font color="blue"><b>Blue</b></font>.
+</figcaption> 
+ </figure>
+ <figure>
+ <img src="assets/t2i_comp_v3a.png" alt="Figure 6">
+ <figcaption>Figure 6: Qualitative Results -- T2I generation comparison of methods, SDXL, ComposeDiff, CO3, and <b>DiscGraph</b>. For prompts: <i>"An photorealistic image of a woman wearing colorful beaded jewelry such as a headpiece and big necklaces. The background has colorful curtains.", "An photo captures a white patio with an open front and a picnic table on the patio. The table has chairs around, all in white, green trees in the background. Fruits and wine on the table.","People walking in front of a cathedral with a golden dome and sturdy structure. People are walking towards it and it is surrounded by trees. The building is in the center of the frame.","A frozen tundra with dried trees surrounded by snow, a small thin stream, and a mossy green ground."</i></figcaption>
+ </figure>
+ <figure>
+ <img src="assets/t2i_comp_sg_v3a.png" alt="Figure 7">
+ <figcaption>Figure 7: Qualitative Results -- Text-conditioned scene graphs used for generating image results of <b>DiscGraph</b> in Figure 5 (above).</figcaption>
+ </figure>
+ <figure>
+ <img src="assets/t2i_coco_lay_v1.png" alt="Figure 8">
+ <figcaption>Figure 8: Qualitative Results -- Text -> SG -> Layout -> image results of LDM and <b>DiscGraph</b>. For prompts:<i>:``a bathtub with four plastic bear toys in bright colors", ``a man and a woman each throwing a frisbee while jumping in the air, ``three egg sandwiches on a white plate",``a baby surrounded by many bears", ``a white horse and a brown horse near a stable,``a church with a big turret and a clock tower surrounded by trees", ``three giraffes standing in front of a barn",``three zebras in grasslands",``a tractor and two boats on a white sand beach", ``a man and a dog on a surfboard riding a wave", ``a boy on a skateboard on a road", ``a bathroom with a big bath tub, a large window on the right, a big mirror above a sink."</i></figcaption>
+ </figure>
+ </section>
+
+ <!-- Code -->
+ <section id="code" class="code-section">
+ <h2>Code</h2>
+ <div class="code-link">
+ <a href="https://github.com/AnnonAnom125/annonAnomrepo.git" target="_blank">View Code</a>
+ </div>
+ </section>
+
+ <!-- Code -->
+ 
+
+</body>
+</html>

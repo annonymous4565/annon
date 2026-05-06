@@ -1,0 +1,115 @@
+=== DIAGNOSTICS ===
+gt_pos_edges: 13
+noisy_pos_edges: 4
+pred_pos_edges: 7
+tp_edges: 6
+fp_edges: 1
+fn_edges: 7
+edge_precision: 0.8571
+edge_recall: 0.4615
+edge_f1: 0.6000
+
+num_nodes: 20
+masked_nodes: 0
+noisy_diff_from_gt: 16
+pred_match_gt: 2
+pred_match_noisy: 1
+node_acc_all: 0.1000
+node_acc_corrupted: 0.0625
+node_acc_masked: 0.0000
+
+=== CLEAN ===
+Nodes:
+  [00] sidewalk
+  [01] street
+  [02] man
+  [03] boy
+  [04] sign
+  [05] building
+  [06] pole
+  [07] boy
+  [08] jacket
+  [09] window
+  [10] car
+  [11] jean
+  [12] pant
+  [13] street
+  [14] people
+  [15] street
+  [16] guy
+  [17] jacket
+  [18] tree
+  [19] bag
+Triplets:
+  [02] man --on--> [00] sidewalk
+  [02] man --walking on--> [01] street
+  [02] man --has--> [11] jean
+  [03] boy --walking on--> [01] street
+  [03] boy --has--> [08] jacket
+  [04] sign --on--> [00] sidewalk
+  [04] sign --on--> [06] pole
+  [05] building --has--> [09] window
+  [07] boy --walking on--> [01] street
+  [07] boy --with--> [12] pant
+  [08] jacket --on--> [03] boy
+  [10] car --on--> [13] street
+  [14] people --on--> [00] sidewalk
+
+=== NOISY (t=42) ===
+Nodes:
+  [00] hill
+  [01] sidewalk
+  [02] girl
+  [03] man
+  [04] light
+  [05] bed
+  [06] board
+  [07] player
+  [08] coat
+  [09] window
+  [10] car
+  [11] pant
+  [12] shoe
+  [13] sidewalk
+  [14] logo
+  [15] counter
+  [16] woman
+  [17] jacket
+  [18] tree
+  [19] box
+Triplets:
+  [02] girl --has--> [11] pant
+  [03] man --has--> [08] coat
+  [04] light --on--> [06] board
+  [05] bed --and--> [09] window
+
+=== PREDICTED x0 ===
+Nodes:
+  [00] bike
+  [01] skateboard
+  [02] person
+  [03] person
+  [04] wheel
+  [05] pole
+  [06] car
+  [07] person
+  [08] pant
+  [09] leg
+  [10] vehicle
+  [11] jean
+  [12] jacket
+  [13] bench
+  [14] nose
+  [15] fence
+  [16] boy
+  [17] jacket
+  [18] car
+  [19] sign
+Triplets:
+  [02] person --on--> [00] bike
+  [02] person --has--> [11] jean
+  [03] person --has--> [08] pant
+  [04] wheel --on--> [06] car
+  [05] pole --on--> [06] car
+  [05] pole --has--> [09] leg
+  [14] nose --on--> [00] bike
