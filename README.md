@@ -28,3 +28,6 @@ bash ./scripts/exp_discretesg_run_all.sh
 bash ./scripts/exp_master_eval_metrics_run_all.sh
 ```
 
+### Image Generators
+
+We use [SDXL-SG](https://github.com/mengcye/LAION-SG) and [GLIGEN](https://github.com/gligen/GLIGEN) for SG-to-Image and Layout-to-Image generation respectively.
