@@ -168,7 +168,7 @@ window.MathJax = {
  </div>
  
  <figure>
- <img src="assets/outline_v4.png" alt="Figure 1" style="max-width: 60%; height: auto;">
+ <img src="assests/outline_v4.png" alt="Figure 1" style="max-width: 60%; height: auto;">
  <figcaption>Figure 1: <b>DiscGraph</b> pipeline: (1) Forward noising process in which relations are edge-gated. (2) Factorized reverse sampling that generates dependency-aware edges and relations. (3) Reward-tilting at inference using the CLIP similarity with the text prompt as reward; a layout head also generates bounding boxes for graph nodes. (4) SG and text conditioned off-the-shelf image generator.
  </figcaption>
  </figure>
@@ -376,32 +376,32 @@ Thus, by leveraging the intermediate clean-state predictions \(\hat G_0\mid G_t\
  <section id="results">
  <h2>Results</h2>
  <figure>
- <img src="assets/graph_metrics_v1.png" alt="Figure 2">
+ <img src="assests/graph_metrics_v1.png" alt="Figure 2">
  <figcaption>Figure 2: Quantitative comparison of different methods on popular alignment metrics. Top performing model is highlighted in <b>Black</b>, 2nd best in <font color="blue"><b>Blue</b></font>. </figcaption>
  </figure>
  <figure>
- <img src="assets/uncond_vg_3a.png" alt="Figure 3">
+ <img src="assests/uncond_vg_3a.png" alt="Figure 3">
  <figcaption>Figure 3: Qualitative Results -- Scene graphs sampled from <b>DiscGraph</b> trained on Visual Genome.</figcaption>
  </figure>
  <figure>
- <img src="assets/comple_vg_v1.png" alt="Figure 4">
+ <img src="assests/comple_vg_v1.png" alt="Figure 4">
  <figcaption>Figure 4: Qualitative Results -- <b>DiscGraph</b> scene graph single object/relation completion task on Visual Genome dataset. Masked objects are in black, and masked relations are indicated by red arrows.</figcaption>
  </figure>
  <figure>
- <img src="assets/t2i_coco_tab.png" alt="Figure 5">
+ <img src="assests/t2i_coco_tab.png" alt="Figure 5">
  <figcaption>Figure 5: Quantitative Results -- Comparing <b>DiscGraph</b> against text-only composition methods. Top performing model is highlighted in <b>Black</b>, 2nd best in <font color="blue"><b>Blue</b></font>.
 </figcaption> 
  </figure>
  <figure>
- <img src="assets/t2i_comp_v3a.png" alt="Figure 6">
+ <img src="assests/t2i_comp_v3a.png" alt="Figure 6">
  <figcaption>Figure 6: Qualitative Results -- T2I generation comparison of methods, SDXL, ComposeDiff, CO3, and <b>DiscGraph</b>. For prompts: <i>"An photorealistic image of a woman wearing colorful beaded jewelry such as a headpiece and big necklaces. The background has colorful curtains.", "An photo captures a white patio with an open front and a picnic table on the patio. The table has chairs around, all in white, green trees in the background. Fruits and wine on the table.","People walking in front of a cathedral with a golden dome and sturdy structure. People are walking towards it and it is surrounded by trees. The building is in the center of the frame.","A frozen tundra with dried trees surrounded by snow, a small thin stream, and a mossy green ground."</i></figcaption>
  </figure>
  <figure>
- <img src="assets/t2i_comp_sg_v3a.png" alt="Figure 7">
+ <img src="assests/t2i_comp_sg_v3a.png" alt="Figure 7">
  <figcaption>Figure 7: Qualitative Results -- Text-conditioned scene graphs used for generating image results of <b>DiscGraph</b> in Figure 5 (above).</figcaption>
  </figure>
  <figure>
- <img src="assets/t2i_coco_lay_v1.png" alt="Figure 8">
+ <img src="assests/t2i_coco_lay_v1.png" alt="Figure 8">
  <figcaption>Figure 8: Qualitative Results -- Text -> SG -> Layout -> image results of LDM and <b>DiscGraph</b>. For prompts:<i>:``a bathtub with four plastic bear toys in bright colors", ``a man and a woman each throwing a frisbee while jumping in the air, ``three egg sandwiches on a white plate",``a baby surrounded by many bears", ``a white horse and a brown horse near a stable,``a church with a big turret and a clock tower surrounded by trees", ``three giraffes standing in front of a barn",``three zebras in grasslands",``a tractor and two boats on a white sand beach", ``a man and a dog on a surfboard riding a wave", ``a boy on a skateboard on a road", ``a bathroom with a big bath tub, a large window on the right, a big mirror above a sink."</i></figcaption>
  </figure>
  </section>
